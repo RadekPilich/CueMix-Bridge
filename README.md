@@ -16,7 +16,7 @@ Requires easyMidi, axios, ws.
 1. Run nodemon CM5_BRIDGE.js
 2. Move / press controllers you want to map in CueMix 5 and observe and note down their codes
 3. Move / press controllers you want to map on your MIDI controler and observe and note down their numbers
-4. Add mapping pairs to cm5map in config-cm5
+4. Add / edit mapping pairs inside the cm5map in config-cuemix5
 
 ## Usage - CueMix Pro:
 1. Run nodemon CMPRO_BRIDGE.js (will be added in 2026/Q2)
