@@ -24,6 +24,7 @@ const cm5map = { //ID is cmdId
 		
     },
     buttons: {
+			// Type 0: Flipped (ON=0, OFF=127)  Type 1: Normal (ON=127, OFF=0)
         '139b0000': { type: 1, cc: 23, chan: 2, note: 16, note_chan: 0},		// 1 - MAIN MUTE
         '0404000a': { type: 1, cc: 24, chan: 2, note: 17, note_chan: 0}, 		// 2 - HP1 MUTE
         '0404000c': { type: 1, cc: 25, chan: 2, note: 18, note_chan: 0},		// 3 - HP2 MUTE
