@@ -21,7 +21,7 @@ Requires easyMidi, axios, ws.
 
 ### Expectations / Limitations:
 1. Control of balances, EQs and compressors will not work out of the box at the moment. That would require additional conversions, that are currently not implemented.
-2. Control of trims, on/off buttons and faders is should be generally working, but there might be some specific instances in CueMix, that expect different value ranges and could therefore not work correctly.
+2. Control of trims, on/off buttons and faders should be generally working, but there might be some specific instances in CueMix, that expect somewhat different value ranges and could therefore not work correctly without adding additional conversion and mapping (sub)type.
 
 ## CueMix Pro:
 ### Usage and mapping:
