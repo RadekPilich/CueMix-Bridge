@@ -8,7 +8,7 @@ Written in Node.js.
 Requires easyMidi, axios, ws.
 
 ## Installation:
-1. Download files
+1. Download files + install required packages
 2. Edit your device address in config-motu
 3. Edit your MIDI control device ports in config-midi
 
