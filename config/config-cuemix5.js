@@ -1,3 +1,6 @@
+// --- REQUIREMENTS ------------------------------------------------------------------
+
+
 // --- MAPPING DEFINITIONS --- ------------------------------------------------------------------
 
 const cm5map = { //ID is cmdId
@@ -25,6 +28,7 @@ const cm5map = { //ID is cmdId
 		
     },
     buttons: {
+			// Type 0: Flipped (ON=0, OFF=127)  Type 1: Normal (ON=127, OFF=0)
         '139b0000': { type: 1, cc: 23, chan: 2, note: 16, note_chan: 0},		// 1 - MAIN MUTE
         '0404000a': { type: 1, cc: 24, chan: 2, note: 17, note_chan: 0}, 		// 2 - HP1 MUTE
         '0404000c': { type: 1, cc: 25, chan: 2, note: 18, note_chan: 0},		// 3 - HP2 MUTE
@@ -36,9 +40,9 @@ const cm5map = { //ID is cmdId
 		
         '139a0000': { type: 1, cc: 23, chan: 3, note: 8, note_chan: 0},  		// 1 - MAIN MONO
 		
-        '03ff0012': { type: 0, cc: 00, chan: 3, note: 29, note_chan: 0}, 		// x - SNDTBL EQ1
-        '03ff0013': { type: 0, cc: 00, chan: 3, note: 29, note_chan: 0},  		// x - SNDTBL EQ2
-        '03ff0014': { type: 0, cc: 00, chan: 3, note: 29, note_chan: 0},  		// x - SNDTBL EQ3
+        '03ff0012': { type: 0, cc: 0, chan: 3, note: 29, note_chan: 0}, 		// x - SNDTBL EQ1
+        '03ff0013': { type: 0, cc: 0, chan: 3, note: 29, note_chan: 0},  		// x - SNDTBL EQ2
+        '03ff0014': { type: 0, cc: 0, chan: 3, note: 29, note_chan: 0},  		// x - SNDTBL EQ3
         '03ff000c': { type: 0, cc: 65, chan: 1, note: 27, note_chan: 0}, 		// x - SUBS EQ1
         '03ff000d': { type: 0, cc: 65, chan: 1, note: 27, note_chan: 0},  		// x - SUBS EQ2
         '03ff000e': { type: 0, cc: 65, chan: 1, note: 27, note_chan: 0},  		// x - SUBS EQ3
