@@ -6,6 +6,8 @@
 	// Irrelevant messages such as clock / sync we don't want to monitor
 	const noiseGrp = ['1770'];  // '0801', '0802', '0b01', '4c01'
 
+	const throttleTime = 250; // Throttle time in milliseconds for high-frequency messages
+
 	const COLORS = {
 		reset: "\x1b[0m",
 		bright: "\x1b[1m",
@@ -23,6 +25,7 @@
 	const TYPE_COLORS = {
 		MOTU: COLORS.blue,
 		CONTROL: COLORS.green,
+		MACRO: COLORS.cyan,
 		ROUTING: COLORS.green,
 		FEEDBACK: COLORS.cyan,
 		VALUES: COLORS.yellow,
@@ -43,6 +46,7 @@
 		VALUES: 0,
 		INPUT: 10,
 		ROUTING: 20,
+		MACRO: 20,
 		INVALUES: 30,
 		CONTROL: 50,
 		MOTU: 70,
@@ -53,5 +57,5 @@
 // --- MODULE EXPORTS ------------------------------------------------------------------
 
 module.exports = {
-	noiseGrp, COLORS, TYPE_COLORS, TYPE_MARGIN,
+	noiseGrp, COLORS, TYPE_COLORS, TYPE_MARGIN, throttleTime,
 };

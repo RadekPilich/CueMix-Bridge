@@ -1,0 +1,23 @@
+{
+  "name": "motu-cuemix-bridge",
+  "version": "1.0.0",
+  "description": "Bi-directional MIDI-to-WebSockets bridge for MOTU CueMix 5 audio interfaces & Bi-directional MIDI-to-Axios bridge for MOTU CueMix Pro audio interfaces.",
+  "main": "CM5_BRIDGE.js",
+  "scripts": {
+    "start": "node CM5_BRIDGE.js",
+    "16a": "node 16A_BRIDGE.js"
+  },
+  "keywords": [
+    "motu",
+    "cuemix",
+    "midi",
+    "websocket",
+    "audio"
+  ],
+  "author": "RadekPilich",
+  "license": "MIT",
+  "dependencies": {
+    "easymidi": "^3.0.0",
+    "ws": "^8.14.0"
+  }
+}

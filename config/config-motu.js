@@ -1,6 +1,4 @@
 // --- REQUIREMENTS ------------------------------------------------------------------
-const axios = require('axios');
-const WebSocket = require('ws');
 
 // --- MOTU / CUEMIX CONFIG ------------------------------------------------------------------
 
@@ -11,12 +9,10 @@ const WebSocket = require('ws');
 	const cmProAddr = '169.254.13.223';
 	// CUEMIX 5
 		//  (828) 127.0.0.1:1281/828E071FBQ
-	const cm5Addr = 'ws://127.0.0.1:1281/828E071FBQ'; 
-	const ws = new WebSocket(cm5Addr);
+	const cm5Addr = 'ws://127.0.0.1:1281/828E071FBQ';
 
 // --- MODULE EXPORTS ------------------------------------------------------------------
 
 module.exports = {
-	axios, 	ws, 
 	cmProAddr, cm5Addr, 
 };
