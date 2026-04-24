@@ -12,16 +12,25 @@ const { scc, son, sof, spp, midiPanic, safeSend, getNoteId, getCCId, getPitchId,
 	
 	
 // --- OPEN WEB SOCKETS INCL. MAPPING CONFIG CHECK --- ------------------------------------------------------------------
+let wsQueue = [];
 
 // midiPanic(); // WARNING - this tends to break things, don't use if you don't need to
 
 		// CONNECTION & ERROR HANDLING
 const ws = new WebSocket(cm5Addr);	
 
+const safeWsSend = (packet) => {
+	if (ws.readyState === WebSocket.OPEN) {
+		ws.send(packet);
+	} else {
+		wsQueue.push(packet);
+	}
+};
+
 		// Create WebSocket with timeout to prevent hanging
 const connectionTimeout = setTimeout(() => {
 	if (ws.readyState === WebSocket.CONNECTING) {
-		console.log('WebSocket connection timeout - MOTU app may not be running');
+	logger('error', 'WebSocket connection timeout - MOTU app may not be running');
 	}
 }, 10000);
 
@@ -31,8 +40,15 @@ ws.on('error', (error) => {
 
 ws.on('open', () => {
 	clearTimeout(connectionTimeout);
-    logger('WebSocket connected to MOTU device');
-    logger('Bridge Active. Waiting for initial MOTU data burst to subside...');
+    logger('system', 'WebSocket connected to MOTU device');
+
+	if (wsQueue.length > 0) {
+		logger('system', `Flushing ${wsQueue.length} queued WebSocket messages...`);
+		wsQueue.forEach(packet => ws.send(packet));
+		wsQueue = [];
+	}
+
+    logger('system', 'Bridge Active. Waiting for initial MOTU data burst to subside...');
 		setTimeout(() => {
 			checkMappings();
 		}, 3000); //3s delay
@@ -42,10 +58,14 @@ ws.on('open', () => {
 			const port1Ok = midiOut && typeof midiOut.send === 'function';
 			const port2Ok = midiOut2 && typeof midiOut2.send === 'function';
 			const port3Ok = midiOutLoopback && typeof midiOutLoopback.send === 'function';
-						
-			if (!port1Ok) logger('error', 'MIDI Out Port health check failed: Port not accessible');
-			if (!port2Ok) logger('error', 'MIDI Out 2 Port health check failed: Port not accessible');
-			if (!port3Ok) logger('error', 'MIDI Out Loopback Port health check failed: Port not accessible');
+
+			if (!port1Ok || !port2Ok || !port3Ok) {
+				if (!port1Ok) logger('error', 'MIDI Out Port health check failed: Port not accessible');
+				if (!port2Ok) logger('error', 'MIDI Out 2 Port health check failed: Port not accessible');
+				if (!port3Ok) logger('error', 'MIDI Out Loopback Port health check failed: Port not accessible');
+			return;
+			}
+			logger('system', 'All MIDI Out Ports remain accessible');
 		}, 30000);
 });
 
@@ -114,6 +134,34 @@ const checkMappings = () => {
 	
 // --- HANDLE MOTU MESSAGE --- ------------------------------------------------------------------
 ws.on('message', handleMotuMessage);
+
+// --- QUEUE MANAGEMENT (Loopback Protection) --- ------------------------------------------------------------------
+let loopbackQueue = [];
+let isLoopbackProcessing = false;
+
+		// Processes the loopback queue with a 10ms interval to prevent driver saturation
+const processLoopbackQueue = () => {
+	if (loopbackQueue.length === 0) {
+		isLoopbackProcessing = false;
+		return;
+	}
+	isLoopbackProcessing = true;
+	const msg = loopbackQueue.shift();
+	
+	safeSend(msg.port, msg.type, msg.chan, msg.cc, msg.val);
+	logger('values', `> LOOPBACK SENT (Queued) for ${msg.name} (${msg.cat}) > CHAN: ${msg.chan} CC: ${msg.cc} VAL: ${msg.val}`);
+	
+	if (loopbackQueue.length > 0) {
+		setTimeout(processLoopbackQueue, 10);
+	} else {
+		isLoopbackProcessing = false;
+	}
+};
+
+const enqueueLoopback = (port, type, chan, cc, val, name, cat) => {
+	loopbackQueue.push({ port, type, chan, cc, val, name, cat });
+	if (!isLoopbackProcessing) processLoopbackQueue();
+};
 
 
 // --- LAST SENT VALUE STORAGE --- ------------------------------------------------------------------
@@ -320,8 +368,8 @@ const handleControlChange = (msg) => {
         lastSentValue[getCCId(msg)] = msg.value;
         trimMatches.forEach(([idHex, cfg]) => {
             const packet = Buffer.concat([Buffer.from(idHex, 'hex'), Buffer.from([0x00, 0x01, flippedVal])]);
-            ws.send(packet);
-            logger('control', `> TRIM [${cfg.name} // ${idHex}] > VAL: -${flippedVal}`);
+            safeWsSend(packet);
+            logger('control', `> CC-TRIM [${cfg.name} // ${idHex}] > VAL: -${flippedVal}`);
         });
     }
 
@@ -333,8 +381,8 @@ const handleControlChange = (msg) => {
         lastSentValue[getCCId(msg)] = msg.value;
         gainMatches.forEach(([idHex, cfg]) => {
             const packet = Buffer.concat([Buffer.from(idHex, 'hex'), Buffer.from([0x00, 0x01, gainVal])]);
-            ws.send(packet);
-            logger('control', `> GAIN [${cfg.name} // ${idHex}] > VAL: ${gainVal}`);
+            safeWsSend(packet);
+            logger('control', `> CC-GAIN [${cfg.name} // ${idHex}] > VAL: ${gainVal}`);
         });
     }
 
@@ -346,8 +394,8 @@ const handleControlChange = (msg) => {
         faderMatches.forEach(([idHex, cfg]) => {
             const valBuf = scaleCCtoFader(msg.value); 
             const packet = Buffer.concat([Buffer.from(idHex, 'hex'), Buffer.from([0x00, 0x04]), Buffer.from(valBuf)]);
-            ws.send(packet);
-            logger('control', `> FADER [${cfg.name} // ${idHex}]  > VAL: ${msg.value}`); 
+            safeWsSend(packet);
+            logger('control', `> CC-FADER [${cfg.name} // ${idHex}]  > VAL: ${msg.value}`); 
         }); 
     }
 
@@ -369,11 +417,11 @@ const handleControlChange = (msg) => {
 				}
 				const stateHex = outputVal === 127 ? 0x01 : 0x00;
 				const packet = Buffer.concat([Buffer.from(idHex, 'hex'),Buffer.from([0x00, 0x01, stateHex])]);
-				ws.send(packet);
+				safeWsSend(packet);
 				
-				safeSend(midiOut2, 'cc', msg.channel, msg.controller, outputVal);
+				safeSend(midiOut, 'cc', msg.channel, msg.controller, outputVal);
 				logger('invalues',`LAST SENT Val.${outputVal} Ch.${cfg.chan} CC.${cfg.cc}`);	
-				logger('control', `> CC BUTTON [${cfg.name} // ${idHex}]  > STATE: ${newValue === 0 ? 'OFF' : 'ON'}`);
+				logger('control', `> CC-BUTTON [${cfg.name} // ${idHex}]  > STATE: ${newValue === 0 ? 'OFF' : 'ON'}`);
 			});
 		 return;
 		}
@@ -402,8 +450,8 @@ const handlePitch = (msg) => {
 
 		pitchTrimMatches.forEach(([idHex, cfg]) => {
 			const packet = Buffer.from([...Buffer.from(idHex, 'hex'), 0x00, 0x01, valBuf]);
-			ws.send(packet);
-			logger('control', `> TRIM [${cfg.name} // ${idHex}]  > VAL: -${valBuf}`);
+			safeWsSend(packet);
+			logger('control', `> P-TRIM [${cfg.name} // ${idHex}]  > VAL: -${valBuf}`);
 		});
 	}
 
@@ -416,8 +464,8 @@ const handlePitch = (msg) => {
 
 		pitchGainMatches.forEach(([idHex, cfg]) => {
 			const packet = Buffer.from([...Buffer.from(idHex, 'hex'), 0x00, 0x01, valBuf]);
-			ws.send(packet);
-			logger('control', `> GAIN [${cfg.name} // ${idHex}] > VAL: ${valBuf}`);
+			safeWsSend(packet);
+			logger('control', `> P-GAIN [${cfg.name} // ${idHex}] > VAL: ${valBuf}`);
 		});
 	}
 
@@ -434,8 +482,8 @@ const handlePitch = (msg) => {
 				Buffer.from([0x00, 0x04]), 
 				valBuf
 			]);
-			ws.send(packet);
-			logger('control', `> FADER [${cfg.name} // ${idHex}] > HEX: ${valBuf.toString('hex')}`); 
+			safeWsSend(packet);
+			logger('control', `> P-FADER [${cfg.name} // ${idHex}] > HEX: ${valBuf.toString('hex')}`); 
 		});
 	}
 
@@ -468,9 +516,9 @@ const handleNoteOn = (msg) => {
 				const outputVelocity = cfg.type === 0 ? (newState === 1 ? 0 : 127) : (newState === 1 ? 127 : 0);
 				const stateHex = newState === 1 ? 0x01 : 0x00;
 				const packet = Buffer.concat([Buffer.from(idHex, 'hex'), Buffer.from([0x00, 0x01, stateHex])]);
-				ws.send(packet);
+				safeWsSend(packet);
 				safeSend(midiOut2, 'noteon', msg.channel, msg.note, outputVelocity);
-				logger('control', `> BUTTON [${cfg.name} // ${idHex}] > (Button is ${outputVelocity === 127 ? 'ON' : 'OFF'})`);
+				logger('control', `> N-BUTTON [${cfg.name} // ${idHex}] > (Button is ${outputVelocity === 127 ? 'ON' : 'OFF'})`);
 			});
 		}
 
@@ -499,8 +547,9 @@ const handleNoteOn = (msg) => {
 
 					if (cfg) {
 						const triggerKey = `${cfg.chan}:${cfg.cc}:${action.val}`;
+
 						if (!processedTriggers.has(triggerKey)) {
-							safeSend(midiOutLoopback, scc, cfg.chan, cfg.cc, action.val);
+							enqueueLoopback(midiOutLoopback, scc, cfg.chan, cfg.cc, action.val, action.name, type);
 							processedTriggers.add(triggerKey);
 						}
 						
