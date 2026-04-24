@@ -520,5 +520,3 @@ const handleNoteOn = (msg) => {
 
 midiIn.on('noteon', handleNoteOn);
 midiIn2.on('noteon', handleNoteOn);
-
-return;
