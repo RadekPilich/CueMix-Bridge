@@ -1,8 +1,0 @@
-{
-	"folders": [
-		{
-			"path": ".",
-			"folder_exclude_patterns": [".sublime_workspaces"]
-		}
-	]
-}
